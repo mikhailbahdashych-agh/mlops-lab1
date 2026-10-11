@@ -1,3 +1,5 @@
+import os
+import yaml
 import argparse
 from dotenv import load_dotenv
 from settings import Settings
@@ -5,6 +7,19 @@ from settings import Settings
 
 def export_envs(environment: str = "dev") -> None:
     load_dotenv(f"config/.env.{environment}", override=True)
+
+
+def export_secrets(secrets_file: str = "secrets.yaml") -> None:
+    with open(secrets_file) as file:
+        secrets = yaml.safe_load(file)
+
+    if "sops" in secrets:
+        raise RuntimeError(
+            f"{secrets_file} is encrypted, decrypt it first: sops --decrypt --in-place {secrets_file}"
+        )
+
+    for key, value in secrets.items():
+        os.environ[key] = str(value)
 
 
 if __name__ == "__main__":
@@ -20,8 +35,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     export_envs(args.environment)
+    export_secrets()
 
     settings = Settings()
 
     print("APP_NAME: ", settings.APP_NAME)
     print("ENVIRONMENT: ", settings.ENVIRONMENT)
+    print("API_KEY: ", settings.API_KEY)
